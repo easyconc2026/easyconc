@@ -5,59 +5,47 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>English Corpus App</title>
     <style>
+        /* --- デザイン設定（CSS） --- */
         :root { --primary: #0284c7; --bg: #f8fafc; --card-bg: #ffffff; --danger: #ef4444; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background: var(--bg); margin: 0; padding: 8px; color: #1e293b; line-height: 1.5; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 8px; color: #1e293b; }
         
-        /* 検索パネル全体をさらにスリムに */
-        .controls { background: var(--card-bg); padding: 12px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); position: sticky; top: 8px; z-index: 100; border: 1px solid #e2e8f0; margin-bottom: 15px; }
-        
+        /* 検索パネルのデザイン */
+        .controls { background: var(--card-bg); padding: 12px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); position: sticky; top: 8px; z-index: 100; border: 1px solid #e2e8f0; margin-bottom: 15px; }
         .search-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 8px; }
         .search-row { display: flex; flex-direction: column; background: #f8fafc; padding: 6px; border-radius: 8px; gap: 4px; border: 1px solid #f1f5f9; }
         .search-row:first-child { background: transparent; padding: 0; border: none; }
         .input-field { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 16px; outline: none; }
-        
         .logic-gate { display: flex; align-items: center; gap: 12px; font-size: 12px; font-weight: bold; color: var(--primary); padding-left: 5px; }
         .logic-gate label { display: flex; align-items: center; gap: 3px; cursor: pointer; }
-
-        /* ラベルと項目を横並びにする設定 */
         .filters { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid #f1f5f9; margin-top: 8px; padding-top: 8px; }
         .filter-item { display: flex; align-items: center; gap: 10px; font-size: 13px; }
         .filter-label { font-weight: bold; color: #64748b; min-width: 45px; flex-shrink: 0; }
-        
-        /* Topicセレクトボックスのスリム化 */
-        select { flex-grow: 1; padding: 6px; border-radius: 6px; border: 1px solid #cbd5e1; background: white; font-size: 13px; min-width: 0; }
-        
-        /* Levelチップのコンパクト化 */
+        select { flex-grow: 1; padding: 6px; border-radius: 6px; border: 1px solid #cbd5e1; background: white; font-size: 13px; }
         .level-container { display: flex; justify-content: space-between; align-items: center; flex-grow: 1; gap: 5px; }
         .level-chips { display: flex; gap: 4px; }
-        .level-chips label { background: #f1f5f9; padding: 5px 8px; border-radius: 6px; cursor: pointer; transition: 0.2s; font-size: 12px; border: 1px solid #e2e8f0; }
+        .level-chips label { background: #f1f5f9; padding: 5px 8px; border-radius: 6px; cursor: pointer; font-size: 12px; border: 1px solid #e2e8f0; }
         .level-chips label:has(input:checked) { background: var(--primary); color: white; border-color: var(--primary); }
         .level-chips input { display: none; }
+        .btn-clear { background: transparent; color: var(--danger); border: 1px solid var(--danger); padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; }
 
-        .btn-clear { background: transparent; color: var(--danger); border: 1px solid var(--danger); padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; white-space: nowrap; }
-
-        /* リスト部分の余白調整 */
+        /* カード形式の検索結果リスト */
         .card { background: var(--card-bg); margin-bottom: 10px; padding: 12px; border-radius: 10px; border-left: 5px solid var(--primary); box-shadow: 0 1px 2px rgba(0,0,0,0.05); position: relative; }
         .en { font-size: 1.05rem; font-weight: 700; color: #0f172a; margin-bottom: 4px; cursor: pointer; padding-right: 45px; word-break: break-word; }
         .jp { color: #475569; font-size: 0.9rem; margin-bottom: 8px; }
         .tag-container { display: flex; gap: 5px; flex-wrap: wrap; }
         .tag { font-size: 9px; padding: 1px 6px; border-radius: 3px; background: #f1f5f9; color: #94a3b8; border: 1px solid #f1f5f9; }
-
         .btn-speak { position: absolute; right: 10px; top: 10px; background: var(--primary); color: white; border: none; width: 38px; height: 38px; border-radius: 50%; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; }
-        
         mark { background: #fef08a; color: #854d0e; padding: 0 1px; }
         #status { font-size: 11px; color: #94a3b8; text-align: center; margin-top: 5px; }
 
+        /* 詳細ポップアップ（モーダル） */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; padding: 20px; align-items: center; justify-content: center; }
         .modal-content { background: white; padding: 20px; border-radius: 15px; width: 100%; max-width: 500px; }
         .modal-en { font-size: 1.2rem; font-weight: bold; margin-bottom: 10px; }
         .btn-close { width: 100%; padding: 12px; background: #f1f5f9; border: none; border-radius: 10px; font-weight: bold; margin-top: 10px; }
 
-        @media (min-width: 600px) {
-            body { padding: 10px 15%; }
-            .search-row { flex-direction: row; align-items: center; }
-        }
+        @media (min-width: 600px) { body { padding: 10px 15%; } .search-row { flex-direction: row; align-items: center; } }
     </style>
 </head>
 <body>
@@ -103,7 +91,6 @@
                 <option value="15.感情表現（喜怒哀楽、やる気、怠けるなども）">15.感情表現</option>
             </select>
         </div>
-
         <div class="filter-item">
             <span class="filter-label">Level</span>
             <div class="level-container">
@@ -131,7 +118,9 @@
 </div>
 
 <script>
-// サンプルデータ（前回と同じ）
+/* --- メインプログラム（JavaScript） --- */
+
+// 1. コーパスデータ本体
 const corpusData = [
     {no: 1, en: "I brush my teeth every morning.", jp: "毎朝、歯を磨きます。", topic: "1.日常生活", level: "e"},
     {no: 2, en: "I have a lot of homework to do.", jp: "宿題がたくさんあります。", topic: "2.学校（勉強・勉強以外含む）", level: "j"},
@@ -141,6 +130,7 @@ const corpusData = [
     {no: 15, en: "I'm so excited about the school trip!", jp: "修学旅行がとても楽しみです！", topic: "15.感情表現（喜怒哀楽、やる気、怠けるなども）", level: "j"}
 ];
 
+// 2. リセット処理
 function allClear() {
     document.getElementById('q1').value = '';
     document.getElementById('q2').value = '';
@@ -152,31 +142,41 @@ function allClear() {
     update();
 }
 
+// 3. 検索・フィルタリングの実行
 function update() {
-    const q1 = document.getElementById('q1').value.trim();
-    const q2 = document.getElementById('q2').value.trim();
-    const q3 = document.getElementById('q3').value.trim();
+    // 各入力欄から検索文字を取得。大文字小文字を区別しないため全て小文字(.toLowerCase)に変換
+    const q1 = document.getElementById('q1').value.trim().toLowerCase();
+    const q2 = document.getElementById('q2').value.trim().toLowerCase();
+    const q3 = document.getElementById('q3').value.trim().toLowerCase();
     const logic2 = document.querySelector('input[name="logic2"]:checked').value;
     const logic3 = document.querySelector('input[name="logic3"]:checked').value;
     const selectedLevels = Array.from(document.querySelectorAll('.filter-level:checked')).map(cb => cb.value);
     const selectedTopic = document.getElementById('topicSelect').value;
 
+    // フィルタリング処理の核
     const filtered = corpusData.filter(d => {
+        // 対象の英文・和文も一旦小文字にして比較する
+        const target = (d.en + d.jp).toLowerCase();
+        
         let isMatch = true;
-        if (q1) isMatch = (d.en.includes(q1) || d.jp.includes(q1));
+        if (q1) isMatch = target.includes(q1);
         if (q2) {
-            const m = (d.en.includes(q2) || d.jp.includes(q2));
+            const m = target.includes(q2);
             isMatch = (logic2 === 'and') ? (isMatch && m) : (isMatch || m);
         }
         if (q3) {
-            const m = (d.en.includes(q3) || d.jp.includes(q3));
+            const m = target.includes(q3);
             isMatch = (logic3 === 'and') ? (isMatch && m) : (isMatch || m);
         }
+
+        // LevelとTopicの条件チェック
         const matchLevel = selectedLevels.includes(d.level);
         const matchTopic = !selectedTopic || d.topic === selectedTopic;
+        
         return isMatch && matchLevel && matchTopic;
     });
 
+    // 検索語のハイライト用の正規表現を作成（大文字小文字無視 'gi' フラグ）
     const words = [q1, q2, q3].filter(w => w !== "");
     let regex = null;
     if (words.length > 0) {
@@ -187,6 +187,7 @@ function update() {
     document.getElementById('status').innerText = `${filtered.length} 件表示中`;
 }
 
+// 4. 結果の描画（HTMLの生成）
 function render(data, regex) {
     const list = document.getElementById('resultList');
     list.innerHTML = '';
@@ -209,21 +210,38 @@ function render(data, regex) {
     });
 }
 
+// 5. 発声機能（ブラウザの音声合成を使用）
 function speak(text) {
-    window.speechSynthesis.cancel();
+    window.speechSynthesis.cancel(); // 連続再生された時のために前の音声をリセット
     const uttr = new SpeechSynthesisUtterance(text);
+    
+    // 【重要】iOS/iPhoneの日本語化対策
+    // 利用可能な声のリストから「英語（en）」かつ「最も適切な声」を探して割り当てる
+    const voices = window.speechSynthesis.getVoices();
+    const enVoice = voices.find(v => v.lang.startsWith('en') && v.name.includes('Google')) || 
+                    voices.find(v => v.lang.startsWith('en')) ||
+                    voices[0];
+    
+    if (enVoice) uttr.voice = enVoice;
     uttr.lang = 'en-US';
-    uttr.rate = 0.9;
+    uttr.rate = 0.9; // 少しゆっくりめに設定
     window.speechSynthesis.speak(uttr);
 }
 
+// 6. ポップアップ表示
 function showModal(en, jp) {
     document.getElementById('modalText').innerText = en;
     document.getElementById('modalJp').innerText = jp;
     document.getElementById('modal').style.display = 'flex';
 }
 
+// 各種ボタンの動作監視を開始
 document.querySelectorAll('input, select').forEach(el => el.addEventListener('input', update));
+
+// iOSでは声のリスト取得に時間がかかる場合があるため、リスト変更時に再取得
+window.speechSynthesis.onvoiceschanged = () => {};
+
+// 起動時に全件表示
 update();
 </script>
 </body>

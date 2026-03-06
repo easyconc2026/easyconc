@@ -3,134 +3,154 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>English Corpus App</title>
+    <title>English Corpus App v3</title>
     <style>
-        /* --- デザイン設定（CSS） --- */
-        :root { --primary: #0284c7; --bg: #f8fafc; --card-bg: #ffffff; --danger: #ef4444; }
+        :root { --primary: #0284c7; --bg: #f1f5f9; --card-bg: #ffffff; --danger: #ef4444; --accent: #10b981; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 8px; color: #1e293b; }
-        
-        /* 検索パネルのデザイン */
-        .controls { background: var(--card-bg); padding: 12px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); position: sticky; top: 8px; z-index: 100; border: 1px solid #e2e8f0; margin-bottom: 15px; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 10px; color: #1e293b; }
+
+        /* 検索パネル（開閉式） */
+        .controls { background: var(--card-bg); border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); position: sticky; top: 10px; z-index: 100; border: 1px solid #e2e8f0; margin-bottom: 15px; overflow: hidden; }
+        .controls-header { background: #e2e8f0; padding: 10px; text-align: center; font-size: 13px; font-weight: bold; cursor: pointer; color: #475569; display: flex; justify-content: center; align-items: center; gap: 8px; }
+        .controls-body { padding: 12px; transition: max-height 0.3s ease-out; max-height: 1000px; }
+        .controls.collapsed .controls-body { max-height: 0; padding: 0; display: none; }
+
         .search-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 8px; }
         .search-row { display: flex; flex-direction: column; background: #f8fafc; padding: 6px; border-radius: 8px; gap: 4px; border: 1px solid #f1f5f9; }
         .search-row:first-child { background: transparent; padding: 0; border: none; }
         .input-field { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 16px; outline: none; }
+        
         .logic-gate { display: flex; align-items: center; gap: 12px; font-size: 12px; font-weight: bold; color: var(--primary); padding-left: 5px; }
         .logic-gate label { display: flex; align-items: center; gap: 3px; cursor: pointer; }
+
         .filters { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid #f1f5f9; margin-top: 8px; padding-top: 8px; }
         .filter-item { display: flex; align-items: center; gap: 10px; font-size: 13px; }
-        .filter-label { font-weight: bold; color: #64748b; min-width: 45px; flex-shrink: 0; }
+        .filter-label { font-weight: bold; color: #64748b; min-width: 45px; }
+        
         select { flex-grow: 1; padding: 6px; border-radius: 6px; border: 1px solid #cbd5e1; background: white; font-size: 13px; }
-        .level-container { display: flex; justify-content: space-between; align-items: center; flex-grow: 1; gap: 5px; }
+        .level-container { display: flex; justify-content: space-between; align-items: center; flex-grow: 1; }
         .level-chips { display: flex; gap: 4px; }
         .level-chips label { background: #f1f5f9; padding: 5px 8px; border-radius: 6px; cursor: pointer; font-size: 12px; border: 1px solid #e2e8f0; }
         .level-chips label:has(input:checked) { background: var(--primary); color: white; border-color: var(--primary); }
         .level-chips input { display: none; }
         .btn-clear { background: transparent; color: var(--danger); border: 1px solid var(--danger); padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; }
 
-        /* カード形式の検索結果リスト */
-        .card { background: var(--card-bg); margin-bottom: 10px; padding: 12px; border-radius: 10px; border-left: 5px solid var(--primary); box-shadow: 0 1px 2px rgba(0,0,0,0.05); position: relative; }
-        .en { font-size: 1.05rem; font-weight: 700; color: #0f172a; margin-bottom: 4px; cursor: pointer; padding-right: 45px; word-break: break-word; }
-        .jp { color: #475569; font-size: 0.9rem; margin-bottom: 8px; }
+        /* カードデザイン */
+        .card { background: var(--card-bg); margin-bottom: 12px; padding: 15px; border-radius: 12px; border-left: 6px solid var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.05); position: relative; }
+        .en { font-size: 1.1rem; font-weight: 700; color: #0f172a; margin-bottom: 6px; cursor: pointer; padding-right: 90px; line-height: 1.3; }
+        .jp { color: #475569; font-size: 0.95rem; margin-bottom: 10px; padding-right: 90px; }
+        
+        /* 2つの再生ボタン */
+        .speak-btns { position: absolute; right: 10px; top: 12px; display: flex; flex-direction: column; gap: 6px; }
+        .btn-speak { width: 36px; height: 36px; border-radius: 50%; border: none; color: white; font-weight: bold; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .btn-en { background: var(--primary); } /* 英語ボタン（青） */
+        .btn-jp { background: var(--accent); }  /* 日本語ボタン（緑） */
+
         .tag-container { display: flex; gap: 5px; flex-wrap: wrap; }
-        .tag { font-size: 9px; padding: 1px 6px; border-radius: 3px; background: #f1f5f9; color: #94a3b8; border: 1px solid #f1f5f9; }
-        .btn-speak { position: absolute; right: 10px; top: 10px; background: var(--primary); color: white; border: none; width: 38px; height: 38px; border-radius: 50%; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; }
-        mark { background: #fef08a; color: #854d0e; padding: 0 1px; }
+        .tag { font-size: 9px; padding: 2px 6px; border-radius: 4px; background: #f1f5f9; color: #94a3b8; border: 1px solid #e2e8f0; }
+        mark { background: #fef08a; color: #854d0e; padding: 0 2px; }
         #status { font-size: 11px; color: #94a3b8; text-align: center; margin-top: 5px; }
 
-        /* 詳細ポップアップ（モーダル） */
+        /* モーダル */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; padding: 20px; align-items: center; justify-content: center; }
         .modal-content { background: white; padding: 20px; border-radius: 15px; width: 100%; max-width: 500px; }
-        .modal-en { font-size: 1.2rem; font-weight: bold; margin-bottom: 10px; }
         .btn-close { width: 100%; padding: 12px; background: #f1f5f9; border: none; border-radius: 10px; font-weight: bold; margin-top: 10px; }
 
-        @media (min-width: 600px) { body { padding: 10px 15%; } .search-row { flex-direction: row; align-items: center; } }
+        @media (min-width: 600px) { body { padding: 20px 20%; } }
     </style>
 </head>
 <body>
 
-<div class="controls">
-    <div class="search-group">
-        <div class="search-row"><input type="text" id="q1" class="input-field" placeholder="キーワード1"></div>
-        <div class="search-row">
-            <div class="logic-gate">
-                <label><input type="radio" name="logic2" value="and"> AND</label>
-                <label><input type="radio" name="logic2" value="or" checked> OR</label>
-            </div>
-            <input type="text" id="q2" class="input-field" placeholder="キーワード2">
-        </div>
-        <div class="search-row">
-            <div class="logic-gate">
-                <label><input type="radio" name="logic3" value="and"> AND</label>
-                <label><input type="radio" name="logic3" value="or" checked> OR</label>
-            </div>
-            <input type="text" id="q3" class="input-field" placeholder="キーワード3">
-        </div>
+<div class="controls" id="searchPanel">
+    <div class="controls-header" onclick="togglePanel()">
+        <span id="toggleIcon">🔍</span> 検索条件を開く/閉じる
     </div>
-    
-    <div class="filters">
-        <div class="filter-item">
-            <span class="filter-label">Topic</span>
-            <select id="topicSelect">
-                <option value="">すべてのトピック表示</option>
-                <option value="1.日常生活">1.日常生活</option>
-                <option value="2.学校（勉強・勉強以外含む）">2.学校（勉強・勉強以外含む）</option>
-                <option value="3.仕事">3.仕事</option>
-                <option value="4.旅行・買い物">4.旅行・買い物</option>
-                <option value="5.ファッション（服飾・美容）">5.ファッション（服飾・美容）</option>
-                <option value="6.趣味・娯楽">6.趣味・娯楽</option>
-                <option value="7.家族・友人関係（プレゼントほか含む）">7.家族・友人関係（プレゼントほか含む）</option>
-                <option value="8.天気・気候・地震">8.天気・気候・地震</option>
-                <option value="9.健康">9.健康</option>
-                <option value="10.食事・食べ物・料理">10.食事・食べ物・料理</option>
-                <option value="11.地理・交通">11.地理・交通</option>
-                <option value="12.政治・社会問題">12.政治・社会問題</option>
-                <option value="13.日本紹介">13.日本紹介</option>
-                <option value="14.日本語独特の表現（擬態語・擬音語なども）">14.日本語独特の表現</option>
-                <option value="15.感情表現（喜怒哀楽、やる気、怠けるなども）">15.感情表現</option>
-            </select>
-        </div>
-        <div class="filter-item">
-            <span class="filter-label">Level</span>
-            <div class="level-container">
-                <div class="level-chips">
-                    <label><input type="checkbox" class="filter-level" value="e" checked><span>e</span></label>
-                    <label><input type="checkbox" class="filter-level" value="j" checked><span>j</span></label>
-                    <label><input type="checkbox" class="filter-level" value="s" checked><span>s</span></label>
-                    <label><input type="checkbox" class="filter-level" value="u" checked><span>u</span></label>
+    <div class="controls-body">
+        <div class="search-group">
+            <div class="search-row"><input type="text" id="q1" class="input-field" placeholder="キーワード1 (正規表現OK)"></div>
+            <div class="search-row">
+                <div class="logic-gate">
+                    <label><input type="radio" name="logic2" value="and"> AND</label>
+                    <label><input type="radio" name="logic2" value="or" checked> OR</label>
                 </div>
-                <button class="btn-clear" onclick="allClear()">Clear</button>
+                <input type="text" id="q2" class="input-field" placeholder="キーワード2">
+            </div>
+            <div class="search-row">
+                <div class="logic-gate">
+                    <label><input type="radio" name="logic3" value="and"> AND</label>
+                    <label><input type="radio" name="logic3" value="or" checked> OR</label>
+                </div>
+                <input type="text" id="q3" class="input-field" placeholder="キーワード3">
+            </div>
+        </div>
+        
+        <div class="filters">
+            <div class="filter-item">
+                <span class="filter-label">Topic</span>
+                <select id="topicSelect">
+                    <option value="">すべてのトピック表示</option>
+                    <option value="1.日常生活">1.日常生活</option>
+                    <option value="2.学校（勉強・勉強以外含む）">2.学校（勉強・勉強以外含む）</option>
+                    <option value="3.仕事">3.仕事</option>
+                    <option value="4.旅行・買い物">4.旅行・買い物</option>
+                    <option value="5.ファッション（服飾・美容）">5.ファッション（服飾・美容）</option>
+                    <option value="6.趣味・娯楽">6.趣味・娯楽</option>
+                    <option value="7.家族・友人関係（プレゼントほか含む）">7.家族・友人関係（プレゼントほか含む）</option>
+                    <option value="8.天気・気候・地震">8.天気・気候・地震</option>
+                    <option value="9.健康">9.健康</option>
+                    <option value="10.食事・食べ物・料理">10.食事・食べ物・料理</option>
+                    <option value="11.地理・交通">11.地理・交通</option>
+                    <option value="12.政治・社会問題">12.政治・社会問題</option>
+                    <option value="13.日本紹介">13.日本紹介</option>
+                    <option value="14.日本語独特の表現（擬態語・擬音語なども）">14.日本語独特の表現</option>
+                    <option value="15.感情表現（喜怒哀楽、やる気、怠けるなども）">15.感情表現</option>
+                </select>
+            </div>
+            <div class="filter-item">
+                <span class="filter-label">Level</span>
+                <div class="level-container">
+                    <div class="level-chips">
+                        <label><input type="checkbox" class="filter-level" value="e" checked><span>e</span></label>
+                        <label><input type="checkbox" class="filter-level" value="j" checked><span>j</span></label>
+                        <label><input type="checkbox" class="filter-level" value="s" checked><span>s</span></label>
+                        <label><input type="checkbox" class="filter-level" value="u" checked><span>u</span></label>
+                    </div>
+                    <button class="btn-clear" onclick="allClear()">Clear</button>
+                </div>
             </div>
         </div>
     </div>
-    <div id="status">準備完了</div>
 </div>
 
+<div id="status">準備中...</div>
 <div id="resultList"></div>
 
 <div id="modal" class="modal" onclick="this.style.display='none'">
     <div class="modal-content" onclick="event.stopPropagation()">
-        <div class="modal-en" id="modalText"></div>
-        <div class="modal-jp" id="modalJp"></div>
+        <div id="modalText" style="font-weight:bold; font-size:1.2rem; margin-bottom:10px;"></div>
+        <div id="modalJp" style="color:#475569; margin-bottom:15px;"></div>
         <button class="btn-close" onclick="document.getElementById('modal').style.display='none'">とじる</button>
     </div>
 </div>
 
 <script>
-/* --- メインプログラム（JavaScript） --- */
-
-// 1. コーパスデータ本体
+/* --- データと初期設定 --- */
 const corpusData = [
     {no: 1, en: "I brush my teeth every morning.", jp: "毎朝、歯を磨きます。", topic: "1.日常生活", level: "e"},
     {no: 2, en: "I have a lot of homework to do.", jp: "宿題がたくさんあります。", topic: "2.学校（勉強・勉強以外含む）", level: "j"},
     {no: 3, en: "She works for a trading company.", jp: "彼女は商社で働いています。", topic: "3.仕事", level: "s"},
     {no: 4, en: "How much is this souvenir?", jp: "このお土産はいくらですか？", topic: "4.旅行・買い物", level: "e"},
     {no: 5, en: "That red dress looks good on you.", jp: "その赤いドレス、似合っていますね。", topic: "5.ファッション（服飾・美容）", level: "u"},
+    {no: 14, en: "It's raining cats and dogs (Pichi-pichi/Zaa-zaa).", jp: "雨がざあざあ降っています。", topic: "14.日本語独特の表現（擬態語・擬音語なども）", level: "u"},
     {no: 15, en: "I'm so excited about the school trip!", jp: "修学旅行がとても楽しみです！", topic: "15.感情表現（喜怒哀楽、やる気、怠けるなども）", level: "j"}
 ];
 
-// 2. リセット処理
+// パネルの開閉切り替え
+function togglePanel() {
+    const panel = document.getElementById('searchPanel');
+    panel.classList.toggle('collapsed');
+}
+
 function allClear() {
     document.getElementById('q1').value = '';
     document.getElementById('q2').value = '';
@@ -142,52 +162,59 @@ function allClear() {
     update();
 }
 
-// 3. 検索・フィルタリングの実行
+/* --- 検索ロジック（正規表現対応版） --- */
 function update() {
-    // 各入力欄から検索文字を取得。大文字小文字を区別しないため全て小文字(.toLowerCase)に変換
-    const q1 = document.getElementById('q1').value.trim().toLowerCase();
-    const q2 = document.getElementById('q2').value.trim().toLowerCase();
-    const q3 = document.getElementById('q3').value.trim().toLowerCase();
+    const q1Raw = document.getElementById('q1').value.trim();
+    const q2Raw = document.getElementById('q2').value.trim();
+    const q3Raw = document.getElementById('q3').value.trim();
     const logic2 = document.querySelector('input[name="logic2"]:checked').value;
     const logic3 = document.querySelector('input[name="logic3"]:checked').value;
     const selectedLevels = Array.from(document.querySelectorAll('.filter-level:checked')).map(cb => cb.value);
     const selectedTopic = document.getElementById('topicSelect').value;
 
-    // フィルタリング処理の核
+    // 正規表現オブジェクトを作成する関数（エラー回避用）
+    const makeRegex = (str) => {
+        if (!str) return null;
+        try { return new RegExp(str, 'i'); } catch(e) { return null; }
+    };
+
+    const reg1 = makeRegex(q1Raw);
+    const reg2 = makeRegex(q2Raw);
+    const reg3 = makeRegex(q3Raw);
+
     const filtered = corpusData.filter(d => {
-        // 対象の英文・和文も一旦小文字にして比較する
-        const target = (d.en + d.jp).toLowerCase();
-        
+        const text = d.en + " " + d.jp;
         let isMatch = true;
-        if (q1) isMatch = target.includes(q1);
-        if (q2) {
-            const m = target.includes(q2);
+        
+        // 正規表現または通常の文字列検索を実行
+        const check = (reg, raw) => reg ? reg.test(text) : (raw ? text.toLowerCase().includes(raw.toLowerCase()) : true);
+
+        if (q1Raw) isMatch = check(reg1, q1Raw);
+        if (q2Raw) {
+            const m = check(reg2, q2Raw);
             isMatch = (logic2 === 'and') ? (isMatch && m) : (isMatch || m);
         }
-        if (q3) {
-            const m = target.includes(q3);
+        if (q3Raw) {
+            const m = check(reg3, q3Raw);
             isMatch = (logic3 === 'and') ? (isMatch && m) : (isMatch || m);
         }
 
-        // LevelとTopicの条件チェック
         const matchLevel = selectedLevels.includes(d.level);
         const matchTopic = !selectedTopic || d.topic === selectedTopic;
-        
         return isMatch && matchLevel && matchTopic;
     });
 
-    // 検索語のハイライト用の正規表現を作成（大文字小文字無視 'gi' フラグ）
-    const words = [q1, q2, q3].filter(w => w !== "");
-    let regex = null;
+    // ハイライト用正規表現
+    const words = [q1Raw, q2Raw, q3Raw].filter(w => w !== "");
+    let highlightRegex = null;
     if (words.length > 0) {
-        try { regex = new RegExp(`(${words.join('|')})`, 'gi'); } catch(e) {}
+        try { highlightRegex = new RegExp(`(${words.join('|')})`, 'gi'); } catch(e) {}
     }
 
-    render(filtered, regex);
+    render(filtered, highlightRegex);
     document.getElementById('status').innerText = `${filtered.length} 件表示中`;
 }
 
-// 4. 結果の描画（HTMLの生成）
 function render(data, regex) {
     const list = document.getElementById('resultList');
     list.innerHTML = '';
@@ -196,8 +223,12 @@ function render(data, regex) {
         div.className = 'card';
         let enDisplay = item.en;
         if (regex) enDisplay = enDisplay.replace(regex, '<mark>$1</mark>');
+        
         div.innerHTML = `
-            <button class="btn-speak" onclick="speak('${item.en.replace(/'/g, "\\'")}')">▶</button>
+            <div class="speak-btns">
+                <button class="btn-speak btn-en" onclick="speak('${item.en.replace(/'/g, "\\'")}', 'en')">E</button>
+                <button class="btn-speak btn-jp" onclick="speak('${item.jp.replace(/'/g, "\\'")}', 'ja')">J</button>
+            </div>
             <div class="en" onclick="showModal('${item.en.replace(/'/g, "\\'")}', '${item.jp}')">${enDisplay}</div>
             <div class="jp">${item.jp}</div>
             <div class="tag-container">
@@ -210,39 +241,42 @@ function render(data, regex) {
     });
 }
 
-// 5. 発声機能（ブラウザの音声合成を使用）
-function speak(text) {
-    window.speechSynthesis.cancel(); // 連続再生された時のために前の音声をリセット
+/* --- 改良された発声機能 --- */
+function speak(text, langCode) {
+    window.speechSynthesis.cancel();
     const uttr = new SpeechSynthesisUtterance(text);
     
-    // 【重要】iOS/iPhoneの日本語化対策
-    // 利用可能な声のリストから「英語（en）」かつ「最も適切な声」を探して割り当てる
     const voices = window.speechSynthesis.getVoices();
-    const enVoice = voices.find(v => v.lang.startsWith('en') && v.name.includes('Google')) || 
-                    voices.find(v => v.lang.startsWith('en')) ||
-                    voices[0];
-    
-    if (enVoice) uttr.voice = enVoice;
-    uttr.lang = 'en-US';
-    uttr.rate = 0.9; // 少しゆっくりめに設定
+    let voice = null;
+
+    if (langCode === 'en') {
+        uttr.lang = 'en-US';
+        uttr.rate = 0.8; // 子供向けに少し遅く設定
+        voice = voices.find(v => v.lang.startsWith('en') && v.name.includes('Google')) || voices.find(v => v.lang.startsWith('en'));
+    } else {
+        uttr.lang = 'ja-JP';
+        uttr.rate = 0.9;
+        voice = voices.find(v => v.lang.startsWith('ja') && (v.name.includes('Kyoko') || v.name.includes('Google'))) || voices.find(v => v.lang.startsWith('ja'));
+    }
+
+    if (voice) uttr.voice = voice;
     window.speechSynthesis.speak(uttr);
 }
 
-// 6. ポップアップ表示
 function showModal(en, jp) {
     document.getElementById('modalText').innerText = en;
     document.getElementById('modalJp').innerText = jp;
     document.getElementById('modal').style.display = 'flex';
 }
 
-// 各種ボタンの動作監視を開始
 document.querySelectorAll('input, select').forEach(el => el.addEventListener('input', update));
+window.speechSynthesis.onvoiceschanged = () => { /* 声の読み込み完了待ち */ };
 
-// iOSでは声のリスト取得に時間がかかる場合があるため、リスト変更時に再取得
-window.speechSynthesis.onvoiceschanged = () => {};
-
-// 起動時に全件表示
-update();
+// 起動時はパネルを閉じておく（iPhoneで見やすくするため）
+window.onload = () => {
+    update();
+    if(window.innerWidth < 600) togglePanel(); 
+};
 </script>
 </body>
 </html>

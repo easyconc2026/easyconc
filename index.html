@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>English Corpus App</title>
+    <style>
+        :root { --primary: #0284c7; --bg: #f8fafc; --card-bg: #ffffff; --danger: #ef4444; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background: var(--bg); margin: 0; padding: 8px; color: #1e293b; line-height: 1.5; }
+        
+        /* 検索パネル全体をさらにスリムに */
+        .controls { background: var(--card-bg); padding: 12px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); position: sticky; top: 8px; z-index: 100; border: 1px solid #e2e8f0; margin-bottom: 15px; }
+        
+        .search-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 8px; }
+        .search-row { display: flex; flex-direction: column; background: #f8fafc; padding: 6px; border-radius: 8px; gap: 4px; border: 1px solid #f1f5f9; }
+        .search-row:first-child { background: transparent; padding: 0; border: none; }
+        .input-field { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 16px; outline: none; }
+        
+        .logic-gate { display: flex; align-items: center; gap: 12px; font-size: 12px; font-weight: bold; color: var(--primary); padding-left: 5px; }
+        .logic-gate label { display: flex; align-items: center; gap: 3px; cursor: pointer; }
+
+        /* ラベルと項目を横並びにする設定 */
+        .filters { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid #f1f5f9; margin-top: 8px; padding-top: 8px; }
+        .filter-item { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+        .filter-label { font-weight: bold; color: #64748b; min-width: 45px; flex-shrink: 0; }
+        
+        /* Topicセレクトボックスのスリム化 */
+        select { flex-grow: 1; padding: 6px; border-radius: 6px; border: 1px solid #cbd5e1; background: white; font-size: 13px; min-width: 0; }
+        
+        /* Levelチップのコンパクト化 */
+        .level-container { display: flex; justify-content: space-between; align-items: center; flex-grow: 1; gap: 5px; }
+        .level-chips { display: flex; gap: 4px; }
+        .level-chips label { background: #f1f5f9; padding: 5px 8px; border-radius: 6px; cursor: pointer; transition: 0.2s; font-size: 12px; border: 1px solid #e2e8f0; }
+        .level-chips label:has(input:checked) { background: var(--primary); color: white; border-color: var(--primary); }
+        .level-chips input { display: none; }
+
+        .btn-clear { background: transparent; color: var(--danger); border: 1px solid var(--danger); padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; white-space: nowrap; }
+
+        /* リスト部分の余白調整 */
+        .card { background: var(--card-bg); margin-bottom: 10px; padding: 12px; border-radius: 10px; border-left: 5px solid var(--primary); box-shadow: 0 1px 2px rgba(0,0,0,0.05); position: relative; }
+        .en { font-size: 1.05rem; font-weight: 700; color: #0f172a; margin-bottom: 4px; cursor: pointer; padding-right: 45px; word-break: break-word; }
+        .jp { color: #475569; font-size: 0.9rem; margin-bottom: 8px; }
+        .tag-container { display: flex; gap: 5px; flex-wrap: wrap; }
+        .tag { font-size: 9px; padding: 1px 6px; border-radius: 3px; background: #f1f5f9; color: #94a3b8; border: 1px solid #f1f5f9; }
+
+        .btn-speak { position: absolute; right: 10px; top: 10px; background: var(--primary); color: white; border: none; width: 38px; height: 38px; border-radius: 50%; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; }
+        
+        mark { background: #fef08a; color: #854d0e; padding: 0 1px; }
+        #status { font-size: 11px; color: #94a3b8; text-align: center; margin-top: 5px; }
+
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; padding: 20px; align-items: center; justify-content: center; }
+        .modal-content { background: white; padding: 20px; border-radius: 15px; width: 100%; max-width: 500px; }
+        .modal-en { font-size: 1.2rem; font-weight: bold; margin-bottom: 10px; }
+        .btn-close { width: 100%; padding: 12px; background: #f1f5f9; border: none; border-radius: 10px; font-weight: bold; margin-top: 10px; }
+
+        @media (min-width: 600px) {
+            body { padding: 10px 15%; }
+            .search-row { flex-direction: row; align-items: center; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="controls">
+    <div class="search-group">
+        <div class="search-row"><input type="text" id="q1" class="input-field" placeholder="キーワード1"></div>
+        <div class="search-row">
+            <div class="logic-gate">
+                <label><input type="radio" name="logic2" value="and"> AND</label>
+                <label><input type="radio" name="logic2" value="or" checked> OR</label>
+            </div>
+            <input type="text" id="q2" class="input-field" placeholder="キーワード2">
+        </div>
+        <div class="search-row">
+            <div class="logic-gate">
+                <label><input type="radio" name="logic3" value="and"> AND</label>
+                <label><input type="radio" name="logic3" value="or" checked> OR</label>
+            </div>
+            <input type="text" id="q3" class="input-field" placeholder="キーワード3">
+        </div>
+    </div>
+    
+    <div class="filters">
+        <div class="filter-item">
+            <span class="filter-label">Topic</span>
+            <select id="topicSelect">
+                <option value="">すべてのトピック表示</option>
+                <option value="1.日常生活">1.日常生活</option>
+                <option value="2.学校（勉強・勉強以外含む）">2.学校（勉強・勉強以外含む）</option>
+                <option value="3.仕事">3.仕事</option>
+                <option value="4.旅行・買い物">4.旅行・買い物</option>
+                <option value="5.ファッション（服飾・美容）">5.ファッション（服飾・美容）</option>
+                <option value="6.趣味・娯楽">6.趣味・娯楽</option>
+                <option value="7.家族・友人関係（プレゼントほか含む）">7.家族・友人関係（プレゼントほか含む）</option>
+                <option value="8.天気・気候・地震">8.天気・気候・地震</option>
+                <option value="9.健康">9.健康</option>
+                <option value="10.食事・食べ物・料理">10.食事・食べ物・料理</option>
+                <option value="11.地理・交通">11.地理・交通</option>
+                <option value="12.政治・社会問題">12.政治・社会問題</option>
+                <option value="13.日本紹介">13.日本紹介</option>
+                <option value="14.日本語独特の表現（擬態語・擬音語なども）">14.日本語独特の表現</option>
+                <option value="15.感情表現（喜怒哀楽、やる気、怠けるなども）">15.感情表現</option>
+            </select>
+        </div>
+
+        <div class="filter-item">
+            <span class="filter-label">Level</span>
+            <div class="level-container">
+                <div class="level-chips">
+                    <label><input type="checkbox" class="filter-level" value="e" checked><span>e</span></label>
+                    <label><input type="checkbox" class="filter-level" value="j" checked><span>j</span></label>
+                    <label><input type="checkbox" class="filter-level" value="s" checked><span>s</span></label>
+                    <label><input type="checkbox" class="filter-level" value="u" checked><span>u</span></label>
+                </div>
+                <button class="btn-clear" onclick="allClear()">Clear</button>
+            </div>
+        </div>
+    </div>
+    <div id="status">準備完了</div>
+</div>
+
+<div id="resultList"></div>
+
+<div id="modal" class="modal" onclick="this.style.display='none'">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <div class="modal-en" id="modalText"></div>
+        <div class="modal-jp" id="modalJp"></div>
+        <button class="btn-close" onclick="document.getElementById('modal').style.display='none'">とじる</button>
+    </div>
+</div>
+
+<script>
+// サンプルデータ（前回と同じ）
+const corpusData = [
+    {no: 1, en: "I brush my teeth every morning.", jp: "毎朝、歯を磨きます。", topic: "1.日常生活", level: "e"},
+    {no: 2, en: "I have a lot of homework to do.", jp: "宿題がたくさんあります。", topic: "2.学校（勉強・勉強以外含む）", level: "j"},
+    {no: 3, en: "She works for a trading company.", jp: "彼女は商社で働いています。", topic: "3.仕事", level: "s"},
+    {no: 4, en: "How much is this souvenir?", jp: "このお土産はいくらですか？", topic: "4.旅行・買い物", level: "e"},
+    {no: 5, en: "That red dress looks good on you.", jp: "その赤いドレス、似合っていますね。", topic: "5.ファッション（服飾・美容）", level: "u"},
+    {no: 15, en: "I'm so excited about the school trip!", jp: "修学旅行がとても楽しみです！", topic: "15.感情表現（喜怒哀楽、やる気、怠けるなども）", level: "j"}
+];
+
+function allClear() {
+    document.getElementById('q1').value = '';
+    document.getElementById('q2').value = '';
+    document.getElementById('q3').value = '';
+    document.querySelectorAll('input[name="logic2"][value="or"]').forEach(el => el.checked = true);
+    document.querySelectorAll('input[name="logic3"][value="or"]').forEach(el => el.checked = true);
+    document.querySelectorAll('.filter-level').forEach(cb => cb.checked = true);
+    document.getElementById('topicSelect').value = '';
+    update();
+}
+
+function update() {
+    const q1 = document.getElementById('q1').value.trim();
+    const q2 = document.getElementById('q2').value.trim();
+    const q3 = document.getElementById('q3').value.trim();
+    const logic2 = document.querySelector('input[name="logic2"]:checked').value;
+    const logic3 = document.querySelector('input[name="logic3"]:checked').value;
+    const selectedLevels = Array.from(document.querySelectorAll('.filter-level:checked')).map(cb => cb.value);
+    const selectedTopic = document.getElementById('topicSelect').value;
+
+    const filtered = corpusData.filter(d => {
+        let isMatch = true;
+        if (q1) isMatch = (d.en.includes(q1) || d.jp.includes(q1));
+        if (q2) {
+            const m = (d.en.includes(q2) || d.jp.includes(q2));
+            isMatch = (logic2 === 'and') ? (isMatch && m) : (isMatch || m);
+        }
+        if (q3) {
+            const m = (d.en.includes(q3) || d.jp.includes(q3));
+            isMatch = (logic3 === 'and') ? (isMatch && m) : (isMatch || m);
+        }
+        const matchLevel = selectedLevels.includes(d.level);
+        const matchTopic = !selectedTopic || d.topic === selectedTopic;
+        return isMatch && matchLevel && matchTopic;
+    });
+
+    const words = [q1, q2, q3].filter(w => w !== "");
+    let regex = null;
+    if (words.length > 0) {
+        try { regex = new RegExp(`(${words.join('|')})`, 'gi'); } catch(e) {}
+    }
+
+    render(filtered, regex);
+    document.getElementById('status').innerText = `${filtered.length} 件表示中`;
+}
+
+function render(data, regex) {
+    const list = document.getElementById('resultList');
+    list.innerHTML = '';
+    data.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'card';
+        let enDisplay = item.en;
+        if (regex) enDisplay = enDisplay.replace(regex, '<mark>$1</mark>');
+        div.innerHTML = `
+            <button class="btn-speak" onclick="speak('${item.en.replace(/'/g, "\\'")}')">▶</button>
+            <div class="en" onclick="showModal('${item.en.replace(/'/g, "\\'")}', '${item.jp}')">${enDisplay}</div>
+            <div class="jp">${item.jp}</div>
+            <div class="tag-container">
+                <span class="tag">No.${item.no}</span>
+                <span class="tag">${item.topic.split('.')[0]}</span>
+                <span class="tag">${item.level.toUpperCase()}</span>
+            </div>
+        `;
+        list.appendChild(div);
+    });
+}
+
+function speak(text) {
+    window.speechSynthesis.cancel();
+    const uttr = new SpeechSynthesisUtterance(text);
+    uttr.lang = 'en-US';
+    uttr.rate = 0.9;
+    window.speechSynthesis.speak(uttr);
+}
+
+function showModal(en, jp) {
+    document.getElementById('modalText').innerText = en;
+    document.getElementById('modalJp').innerText = jp;
+    document.getElementById('modal').style.display = 'flex';
+}
+
+document.querySelectorAll('input, select').forEach(el => el.addEventListener('input', update));
+update();
+</script>
+</body>
+</html>

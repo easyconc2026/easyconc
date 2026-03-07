@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>English Corpus App v4</title>
+    <title>English Corpus App v5</title>
     <style>
         :root { --primary: #0284c7; --bg: #f1f5f9; --card-bg: #ffffff; --danger: #ef4444; --accent: #10b981; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -118,59 +118,69 @@
 </div>
 
 <script>
-/* --- 公開されたCSVのURL --- */
 const DATA_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRIJD7eoIXmzx5Zoiqz4L-x0QKkarrbbTON0RfCOOZBdUHdajZ_e7tTccROQjEjqjSQyMUR5eyS54BQ/pub?gid=0&single=true&output=csv";
 const TOPIC_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRIJD7eoIXmzx5Zoiqz4L-x0QKkarrbbTON0RfCOOZBdUHdajZ_e7tTccROQjEjqjSQyMUR5eyS54BQ/pub?gid=1101820102&single=true&output=csv";
 
 let corpusData = [];
 
-// CSVを解析する簡易関数
+// CSVを正確に解析する関数（カンマや引用符の処理を強化）
 function parseCSV(text) {
-    const lines = text.split(/\r?\n/);
-    return lines.slice(1).map(line => {
-        // カンマで分割するが、引用符内のカンマは無視する正規表現
-        const parts = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
-        return parts ? parts.map(p => p.replace(/^"|"$/g, '')) : [];
-    }).filter(p => p.length > 0);
+    const result = [];
+    let row = [];
+    let field = "";
+    let inQuotes = false;
+
+    for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        const nextChar = text[i + 1];
+
+        if (inQuotes) {
+            if (char === '"' && nextChar === '"') { field += '"'; i++; }
+            else if (char === '"') { inQuotes = false; }
+            else { field += char; }
+        } else {
+            if (char === '"') { inQuotes = true; }
+            else if (char === ',') { row.push(field); field = ""; }
+            else if (char === '\r' || char === '\n') {
+                if (field || row.length > 0) {
+                    row.push(field);
+                    result.push(row);
+                    field = ""; row = [];
+                }
+                if (char === '\r' && nextChar === '\n') i++;
+            } else { field += char; }
+        }
+    }
+    if (field || row.length > 0) { row.push(field); result.push(row); }
+    return result;
 }
 
-// データの読み込み
 async function loadData() {
     try {
-        const [dataRes, topicRes] = await Promise.all([
-            fetch(DATA_URL),
-            fetch(TOPIC_URL)
-        ]);
-        
+        const [dataRes, topicRes] = await Promise.all([fetch(DATA_URL), fetch(TOPIC_URL)]);
         const dataText = await dataRes.text();
         const topicText = await topicRes.text();
 
-        // トピックリストの更新
-        const topics = parseCSV(topicText);
+        const rawTopic = parseCSV(topicText);
         const topicSelect = document.getElementById('topicSelect');
         topicSelect.innerHTML = '<option value="">すべてのトピック表示</option>';
-        topics.forEach(t => {
-            const opt = document.createElement('option');
-            opt.value = t[0];
-            opt.innerText = t[0];
-            topicSelect.appendChild(opt);
+        rawTopic.slice(1).forEach(t => {
+            if(t[0]){
+                const opt = document.createElement('option');
+                opt.value = t[0]; opt.innerText = t[0];
+                topicSelect.appendChild(opt);
+            }
         });
 
-        // コーパスデータの更新
         const rawData = parseCSV(dataText);
-        corpusData = rawData.map(r => ({
-            no: r[0],
-            en: r[1],
-            jp: r[2],
-            topic: r[3],
-            level: r[4]
+        corpusData = rawData.slice(1).map(r => ({
+            no: r[0] || "", en: r[1] || "", jp: r[2] || "", topic: r[3] || "", level: r[4] || ""
         }));
 
         document.getElementById('status').innerText = "読み込み完了";
         update();
     } catch (e) {
-        document.getElementById('status').innerText = "エラー: データの読み込みに失敗しました";
-        console.error(e);
+        document.getElementById('status').innerText = "エラー: 読み込み失敗";
     }
 }
 
@@ -200,12 +210,8 @@ function update() {
 
     const makeRegex = (str) => {
         if (!str) return null;
-        try { 
-            // 正規表現としての入力を優先しつつ、失敗したら通常文字列としてエスケープ
-            return new RegExp(str, 'i'); 
-        } catch(e) {
-            try { return new RegExp(str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'); } catch(e2) { return null; }
-        }
+        try { return new RegExp(str, 'i'); } 
+        catch(e) { return new RegExp(str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'); }
     };
 
     const reg1 = makeRegex(q1Raw);
@@ -213,9 +219,9 @@ function update() {
     const reg3 = makeRegex(q3Raw);
 
     const filtered = corpusData.filter(d => {
-        const text = d.en + " " + d.jp;
+        const text = (d.en + " " + d.jp);
         let isMatch = true;
-        const check = (reg, raw) => reg ? reg.test(text) : (raw ? text.toLowerCase().includes(raw.toLowerCase()) : true);
+        const check = (reg, raw) => reg ? reg.test(text) : true;
 
         if (q1Raw) isMatch = check(reg1, q1Raw);
         if (q2Raw) {
@@ -235,8 +241,8 @@ function update() {
     const words = [q1Raw, q2Raw, q3Raw].filter(w => w !== "");
     let highlightRegex = null;
     if (words.length > 0) {
-        const escapedWords = words.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-        highlightRegex = new RegExp(`(${escapedWords.join('|')})`, 'gi');
+        const escaped = words.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+        highlightRegex = new RegExp(`(${escaped.join('|')})`, 'gi');
     }
 
     render(filtered, highlightRegex);
@@ -249,19 +255,19 @@ function render(data, regex) {
     data.forEach(item => {
         const div = document.createElement('div');
         div.className = 'card';
-        let enDisplay = item.en || "";
-        let jpDisplay = item.jp || "";
+        let enDisp = item.en;
+        let jpDisp = item.jp;
         if (regex) {
-            enDisplay = enDisplay.replace(regex, '<mark>$1</mark>');
-            jpDisplay = jpDisplay.replace(regex, '<mark>$1</mark>');
+            enDisp = enDisp.replace(regex, '<mark>$1</mark>');
+            jpDisp = jpDisp.replace(regex, '<mark>$1</mark>');
         }
         div.innerHTML = `
             <div class="speak-btns">
-                <button class="btn-speak btn-en" onclick="speak('${(item.en||"").replace(/'/g, "\\'")}', 'en')">E</button>
-                <button class="btn-speak btn-jp" onclick="speak('${(item.jp||"").replace(/'/g, "\\'")}', 'ja')">J</button>
+                <button class="btn-speak btn-en" onclick="speak('${item.en.replace(/'/g, "\\'")}', 'en')">E</button>
+                <button class="btn-speak btn-jp" onclick="speak('${item.jp.replace(/'/g, "\\'")}', 'ja')">J</button>
             </div>
-            <div class="en" onclick="showModal('${(item.en||"").replace(/'/g, "\\'")}', '${(item.jp||"").replace(/'/g, "\\'")}')">${enDisplay}</div>
-            <div class="jp">${jpDisplay}</div>
+            <div class="en" onclick="showModal('${item.en.replace(/'/g, "\\'")}', '${item.jp.replace(/'/g, "\\'")}')">${enDisp}</div>
+            <div class="jp">${jpDisp}</div>
             <div class="tag-container">
                 <span class="tag">No.${item.no}</span>
                 <span class="tag">${item.topic ? item.topic.split('.')[0] : "-"}</span>
@@ -272,21 +278,17 @@ function render(data, regex) {
     });
 }
 
-function speak(text, langCode) {
+function speak(text, lang) {
     window.speechSynthesis.cancel();
     const uttr = new SpeechSynthesisUtterance(text);
     const voices = window.speechSynthesis.getVoices();
-    let voice = null;
-    if (langCode === 'en') {
-        uttr.lang = 'en-US';
-        uttr.rate = 0.8;
-        voice = voices.find(v => v.lang.startsWith('en') && v.name.includes('Google')) || voices.find(v => v.lang.startsWith('en'));
+    if (lang === 'en') {
+        uttr.lang = 'en-US'; uttr.rate = 0.8;
+        uttr.voice = voices.find(v => v.lang.startsWith('en') && v.name.includes('Google')) || voices.find(v => v.lang.startsWith('en'));
     } else {
-        uttr.lang = 'ja-JP';
-        uttr.rate = 0.9;
-        voice = voices.find(v => v.lang.startsWith('ja') && (v.name.includes('Kyoko') || v.name.includes('Google'))) || voices.find(v => v.lang.startsWith('ja'));
+        uttr.lang = 'ja-JP'; uttr.rate = 0.9;
+        uttr.voice = voices.find(v => v.lang.startsWith('ja') && (v.name.includes('Kyoko') || v.name.includes('Google'))) || voices.find(v => v.lang.startsWith('ja'));
     }
-    if (voice) uttr.voice = voice;
     window.speechSynthesis.speak(uttr);
 }
 

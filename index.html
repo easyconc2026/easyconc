@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>English Corpus App v3</title>
+    <title>English Corpus App v4</title>
     <style>
         :root { --primary: #0284c7; --bg: #f1f5f9; --card-bg: #ffffff; --danger: #ef4444; --accent: #10b981; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -43,15 +43,14 @@
         /* 2つの再生ボタン */
         .speak-btns { position: absolute; right: 10px; top: 12px; display: flex; flex-direction: column; gap: 6px; }
         .btn-speak { width: 36px; height: 36px; border-radius: 50%; border: none; color: white; font-weight: bold; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .btn-en { background: var(--primary); } /* 英語ボタン（青） */
-        .btn-jp { background: var(--accent); }  /* 日本語ボタン（緑） */
+        .btn-en { background: var(--primary); }
+        .btn-jp { background: var(--accent); }
 
         .tag-container { display: flex; gap: 5px; flex-wrap: wrap; }
         .tag { font-size: 9px; padding: 2px 6px; border-radius: 4px; background: #f1f5f9; color: #94a3b8; border: 1px solid #e2e8f0; }
         mark { background: #fef08a; color: #854d0e; padding: 0 2px; }
         #status { font-size: 11px; color: #94a3b8; text-align: center; margin-top: 5px; }
 
-        /* モーダル */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; padding: 20px; align-items: center; justify-content: center; }
         .modal-content { background: white; padding: 20px; border-radius: 15px; width: 100%; max-width: 500px; }
         .btn-close { width: 100%; padding: 12px; background: #f1f5f9; border: none; border-radius: 10px; font-weight: bold; margin-top: 10px; }
@@ -88,22 +87,7 @@
             <div class="filter-item">
                 <span class="filter-label">Topic</span>
                 <select id="topicSelect">
-                    <option value="">すべてのトピック表示</option>
-                    <option value="1.日常生活">1.日常生活</option>
-                    <option value="2.学校（勉強・勉強以外含む）">2.学校（勉強・勉強以外含む）</option>
-                    <option value="3.仕事">3.仕事</option>
-                    <option value="4.旅行・買い物">4.旅行・買い物</option>
-                    <option value="5.ファッション（服飾・美容）">5.ファッション（服飾・美容）</option>
-                    <option value="6.趣味・娯楽">6.趣味・娯楽</option>
-                    <option value="7.家族・友人関係（プレゼントほか含む）">7.家族・友人関係（プレゼントほか含む）</option>
-                    <option value="8.天気・気候・地震">8.天気・気候・地震</option>
-                    <option value="9.健康">9.健康</option>
-                    <option value="10.食事・食べ物・料理">10.食事・食べ物・料理</option>
-                    <option value="11.地理・交通">11.地理・交通</option>
-                    <option value="12.政治・社会問題">12.政治・社会問題</option>
-                    <option value="13.日本紹介">13.日本紹介</option>
-                    <option value="14.日本語独特の表現（擬態語・擬音語なども）">14.日本語独特の表現</option>
-                    <option value="15.感情表現（喜怒哀楽、やる気、怠けるなども）">15.感情表現</option>
+                    <option value="">読込中...</option>
                 </select>
             </div>
             <div class="filter-item">
@@ -122,7 +106,7 @@
     </div>
 </div>
 
-<div id="status">準備中...</div>
+<div id="status">データを読み込んでいます...</div>
 <div id="resultList"></div>
 
 <div id="modal" class="modal" onclick="this.style.display='none'">
@@ -134,21 +118,64 @@
 </div>
 
 <script>
-/* --- データと初期設定 --- */
-const corpusData = [
-    {no: 1, en: "I brush my teeth every morning.", jp: "毎朝、歯を磨きます。", topic: "1.日常生活", level: "e"},
-    {no: 2, en: "I have a lot of homework to do.", jp: "宿題がたくさんあります。", topic: "2.学校（勉強・勉強以外含む）", level: "j"},
-    {no: 3, en: "She works for a trading company.", jp: "彼女は商社で働いています。", topic: "3.仕事", level: "s"},
-    {no: 4, en: "How much is this souvenir?", jp: "このお土産はいくらですか？", topic: "4.旅行・買い物", level: "e"},
-    {no: 5, en: "That red dress looks good on you.", jp: "その赤いドレス、似合っていますね。", topic: "5.ファッション（服飾・美容）", level: "u"},
-    {no: 14, en: "It's raining cats and dogs (Pichi-pichi/Zaa-zaa).", jp: "雨がざあざあ降っています。", topic: "14.日本語独特の表現（擬態語・擬音語なども）", level: "u"},
-    {no: 15, en: "I'm so excited about the school trip!", jp: "修学旅行がとても楽しみです！", topic: "15.感情表現（喜怒哀楽、やる気、怠けるなども）", level: "j"}
-];
+/* --- 公開されたCSVのURL --- */
+const DATA_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRIJD7eoIXmzx5Zoiqz4L-x0QKkarrbbTON0RfCOOZBdUHdajZ_e7tTccROQjEjqjSQyMUR5eyS54BQ/pub?gid=0&single=true&output=csv";
+const TOPIC_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRIJD7eoIXmzx5Zoiqz4L-x0QKkarrbbTON0RfCOOZBdUHdajZ_e7tTccROQjEjqjSQyMUR5eyS54BQ/pub?gid=1101820102&single=true&output=csv";
 
-// パネルの開閉切り替え
+let corpusData = [];
+
+// CSVを解析する簡易関数
+function parseCSV(text) {
+    const lines = text.split(/\r?\n/);
+    return lines.slice(1).map(line => {
+        // カンマで分割するが、引用符内のカンマは無視する正規表現
+        const parts = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
+        return parts ? parts.map(p => p.replace(/^"|"$/g, '')) : [];
+    }).filter(p => p.length > 0);
+}
+
+// データの読み込み
+async function loadData() {
+    try {
+        const [dataRes, topicRes] = await Promise.all([
+            fetch(DATA_URL),
+            fetch(TOPIC_URL)
+        ]);
+        
+        const dataText = await dataRes.text();
+        const topicText = await topicRes.text();
+
+        // トピックリストの更新
+        const topics = parseCSV(topicText);
+        const topicSelect = document.getElementById('topicSelect');
+        topicSelect.innerHTML = '<option value="">すべてのトピック表示</option>';
+        topics.forEach(t => {
+            const opt = document.createElement('option');
+            opt.value = t[0];
+            opt.innerText = t[0];
+            topicSelect.appendChild(opt);
+        });
+
+        // コーパスデータの更新
+        const rawData = parseCSV(dataText);
+        corpusData = rawData.map(r => ({
+            no: r[0],
+            en: r[1],
+            jp: r[2],
+            topic: r[3],
+            level: r[4]
+        }));
+
+        document.getElementById('status').innerText = "読み込み完了";
+        update();
+    } catch (e) {
+        document.getElementById('status').innerText = "エラー: データの読み込みに失敗しました";
+        console.error(e);
+    }
+}
+
 function togglePanel() {
-    const panel = document.getElementById('searchPanel');
-    panel.classList.toggle('collapsed');
+    document.getElementById('searchPanel').classList.toggle('collapsed');
 }
 
 function allClear() {
@@ -162,7 +189,6 @@ function allClear() {
     update();
 }
 
-/* --- 検索ロジック（正規表現対応版） --- */
 function update() {
     const q1Raw = document.getElementById('q1').value.trim();
     const q2Raw = document.getElementById('q2').value.trim();
@@ -172,10 +198,14 @@ function update() {
     const selectedLevels = Array.from(document.querySelectorAll('.filter-level:checked')).map(cb => cb.value);
     const selectedTopic = document.getElementById('topicSelect').value;
 
-    // 正規表現オブジェクトを作成する関数（エラー回避用）
     const makeRegex = (str) => {
         if (!str) return null;
-        try { return new RegExp(str, 'i'); } catch(e) { return null; }
+        try { 
+            // 正規表現としての入力を優先しつつ、失敗したら通常文字列としてエスケープ
+            return new RegExp(str, 'i'); 
+        } catch(e) {
+            try { return new RegExp(str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'); } catch(e2) { return null; }
+        }
     };
 
     const reg1 = makeRegex(q1Raw);
@@ -185,8 +215,6 @@ function update() {
     const filtered = corpusData.filter(d => {
         const text = d.en + " " + d.jp;
         let isMatch = true;
-        
-        // 正規表現または通常の文字列検索を実行
         const check = (reg, raw) => reg ? reg.test(text) : (raw ? text.toLowerCase().includes(raw.toLowerCase()) : true);
 
         if (q1Raw) isMatch = check(reg1, q1Raw);
@@ -199,16 +227,16 @@ function update() {
             isMatch = (logic3 === 'and') ? (isMatch && m) : (isMatch || m);
         }
 
-        const matchLevel = selectedLevels.includes(d.level);
+        const matchLevel = d.level ? selectedLevels.includes(d.level.toLowerCase()) : true;
         const matchTopic = !selectedTopic || d.topic === selectedTopic;
         return isMatch && matchLevel && matchTopic;
     });
 
-    // ハイライト用正規表現
     const words = [q1Raw, q2Raw, q3Raw].filter(w => w !== "");
     let highlightRegex = null;
     if (words.length > 0) {
-        try { highlightRegex = new RegExp(`(${words.join('|')})`, 'gi'); } catch(e) {}
+        const escapedWords = words.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+        highlightRegex = new RegExp(`(${escapedWords.join('|')})`, 'gi');
     }
 
     render(filtered, highlightRegex);
@@ -221,44 +249,43 @@ function render(data, regex) {
     data.forEach(item => {
         const div = document.createElement('div');
         div.className = 'card';
-        let enDisplay = item.en;
-        if (regex) enDisplay = enDisplay.replace(regex, '<mark>$1</mark>');
-        
+        let enDisplay = item.en || "";
+        let jpDisplay = item.jp || "";
+        if (regex) {
+            enDisplay = enDisplay.replace(regex, '<mark>$1</mark>');
+            jpDisplay = jpDisplay.replace(regex, '<mark>$1</mark>');
+        }
         div.innerHTML = `
             <div class="speak-btns">
-                <button class="btn-speak btn-en" onclick="speak('${item.en.replace(/'/g, "\\'")}', 'en')">E</button>
-                <button class="btn-speak btn-jp" onclick="speak('${item.jp.replace(/'/g, "\\'")}', 'ja')">J</button>
+                <button class="btn-speak btn-en" onclick="speak('${(item.en||"").replace(/'/g, "\\'")}', 'en')">E</button>
+                <button class="btn-speak btn-jp" onclick="speak('${(item.jp||"").replace(/'/g, "\\'")}', 'ja')">J</button>
             </div>
-            <div class="en" onclick="showModal('${item.en.replace(/'/g, "\\'")}', '${item.jp}')">${enDisplay}</div>
-            <div class="jp">${item.jp}</div>
+            <div class="en" onclick="showModal('${(item.en||"").replace(/'/g, "\\'")}', '${(item.jp||"").replace(/'/g, "\\'")}')">${enDisplay}</div>
+            <div class="jp">${jpDisplay}</div>
             <div class="tag-container">
                 <span class="tag">No.${item.no}</span>
-                <span class="tag">${item.topic.split('.')[0]}</span>
-                <span class="tag">${item.level.toUpperCase()}</span>
+                <span class="tag">${item.topic ? item.topic.split('.')[0] : "-"}</span>
+                <span class="tag">${item.level ? item.level.toUpperCase() : "-"}</span>
             </div>
         `;
         list.appendChild(div);
     });
 }
 
-/* --- 改良された発声機能 --- */
 function speak(text, langCode) {
     window.speechSynthesis.cancel();
     const uttr = new SpeechSynthesisUtterance(text);
-    
     const voices = window.speechSynthesis.getVoices();
     let voice = null;
-
     if (langCode === 'en') {
         uttr.lang = 'en-US';
-        uttr.rate = 0.8; // 子供向けに少し遅く設定
+        uttr.rate = 0.8;
         voice = voices.find(v => v.lang.startsWith('en') && v.name.includes('Google')) || voices.find(v => v.lang.startsWith('en'));
     } else {
         uttr.lang = 'ja-JP';
         uttr.rate = 0.9;
         voice = voices.find(v => v.lang.startsWith('ja') && (v.name.includes('Kyoko') || v.name.includes('Google'))) || voices.find(v => v.lang.startsWith('ja'));
     }
-
     if (voice) uttr.voice = voice;
     window.speechSynthesis.speak(uttr);
 }
@@ -270,12 +297,9 @@ function showModal(en, jp) {
 }
 
 document.querySelectorAll('input, select').forEach(el => el.addEventListener('input', update));
-window.speechSynthesis.onvoiceschanged = () => { /* 声の読み込み完了待ち */ };
-
-// 起動時はパネルを閉じておく（iPhoneで見やすくするため）
 window.onload = () => {
-    update();
-    if(window.innerWidth < 600) togglePanel(); 
+    loadData();
+    if(window.innerWidth < 600) document.getElementById('searchPanel').classList.add('collapsed');
 };
 </script>
 </body>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>English Corpus App v6</title>
+    <title>English Corpus App v7</title>
     <style>
         :root { --primary: #0284c7; --bg: #f1f5f9; --card-bg: #ffffff; --danger: #ef4444; --accent: #10b981; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -15,30 +15,28 @@
         .controls.collapsed .controls-body { max-height: 0; padding: 0; display: none; }
 
         .search-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 8px; }
-        
-        /* 入力欄とチェックボックスの横並び設定 */
         .search-row { display: flex; flex-direction: column; background: #f8fafc; padding: 6px; border-radius: 8px; gap: 4px; border: 1px solid #f1f5f9; }
         .search-row:first-child { background: transparent; padding: 0; border: none; }
         
         .input-container { display: flex; align-items: center; gap: 8px; width: 100%; }
         .input-field { flex: 1; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 16px; outline: none; min-width: 0; }
         
-        .word-check { display: flex; align-items: center; gap: 3px; font-size: 11px; color: #64748b; white-space: nowrap; cursor: pointer; user-select: none; }
-        .word-check input { width: 16px; height: 16px; cursor: pointer; }
+        .word-check { display: flex; align-items: center; gap: 3px; font-size: 10px; color: #64748b; white-space: nowrap; cursor: pointer; user-select: none; line-height: 1.1; }
+        .word-check input { width: 14px; height: 14px; }
 
-        .logic-gate { display: flex; align-items: center; gap: 12px; font-size: 12px; font-weight: bold; color: var(--primary); padding-left: 5px; }
+        .logic-gate { display: flex; align-items: center; gap: 12px; font-size: 11px; font-weight: bold; color: var(--primary); padding-left: 5px; }
         .logic-gate label { display: flex; align-items: center; gap: 3px; cursor: pointer; }
 
         .filters { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid #f1f5f9; margin-top: 8px; padding-top: 8px; }
         .filter-item { display: flex; align-items: center; gap: 10px; font-size: 13px; }
-        .filter-label { font-weight: bold; color: #64748b; min-width: 45px; }
+        .filter-label { font-weight: bold; color: #64748b; min-width: 50px; font-size: 12px; }
         
         select { flex-grow: 1; padding: 6px; border-radius: 6px; border: 1px solid #cbd5e1; background: white; font-size: 13px; }
         .level-container { display: flex; justify-content: space-between; align-items: center; flex-grow: 1; }
-        .level-chips { display: flex; gap: 4px; }
-        .level-chips label { background: #f1f5f9; padding: 5px 8px; border-radius: 6px; cursor: pointer; font-size: 12px; border: 1px solid #e2e8f0; }
-        .level-chips label:has(input:checked) { background: var(--primary); color: white; border-color: var(--primary); }
-        .level-chips input { display: none; }
+        .level-chips, .speed-chips { display: flex; gap: 4px; }
+        .level-chips label, .speed-chips label { background: #f1f5f9; padding: 5px 8px; border-radius: 6px; cursor: pointer; font-size: 11px; border: 1px solid #e2e8f0; }
+        .level-chips label:has(input:checked), .speed-chips label:has(input:checked) { background: var(--primary); color: white; border-color: var(--primary); }
+        .level-chips input, .speed-chips input { display: none; }
         .btn-clear { background: transparent; color: var(--danger); border: 1px solid var(--danger); padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; }
 
         .card { background: var(--card-bg); margin-bottom: 12px; padding: 15px; border-radius: 12px; border-left: 6px solid var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.05); position: relative; }
@@ -66,34 +64,34 @@
 
 <div class="controls" id="searchPanel">
     <div class="controls-header" onclick="togglePanel()">
-        <span id="toggleIcon">🔍</span> 検索条件を開く/閉じる
+        <span id="toggleIcon">🔍</span> Filter Options / 検索・表示設定
     </div>
     <div class="controls-body">
         <div class="search-group">
             <div class="search-row">
                 <div class="input-container">
-                    <input type="text" id="q1" class="input-field" placeholder="キーワード1">
-                    <label class="word-check"><input type="checkbox" id="w1">単語検索</label>
+                    <input type="text" id="q1" class="input-field" placeholder="Keyword 1 / キーワード1">
+                    <label class="word-check"><input type="checkbox" id="w1">Whole Word<br>単語検索</label>
                 </div>
             </div>
             <div class="search-row">
                 <div class="logic-gate">
-                    <label><input type="radio" name="logic2" value="and"> AND</label>
-                    <label><input type="radio" name="logic2" value="or" checked> OR</label>
+                    <label><input type="radio" name="logic2" value="and"> AND / かつ</label>
+                    <label><input type="radio" name="logic2" value="or" checked> OR / または</label>
                 </div>
                 <div class="input-container">
-                    <input type="text" id="q2" class="input-field" placeholder="キーワード2">
-                    <label class="word-check"><input type="checkbox" id="w2">単語検索</label>
+                    <input type="text" id="q2" class="input-field" placeholder="Keyword 2 / キーワード2">
+                    <label class="word-check"><input type="checkbox" id="w2">Whole Word<br>単語検索</label>
                 </div>
             </div>
             <div class="search-row">
                 <div class="logic-gate">
-                    <label><input type="radio" name="logic3" value="and"> AND</label>
-                    <label><input type="radio" name="logic3" value="or" checked> OR</label>
+                    <label><input type="radio" name="logic3" value="and"> AND / かつ</label>
+                    <label><input type="radio" name="logic3" value="or" checked> OR / または</label>
                 </div>
                 <div class="input-container">
-                    <input type="text" id="q3" class="input-field" placeholder="キーワード3">
-                    <label class="word-check"><input type="checkbox" id="w3">単語検索</label>
+                    <input type="text" id="q3" class="input-field" placeholder="Keyword 3 / キーワード3">
+                    <label class="word-check"><input type="checkbox" id="w3">Whole Word<br>単語検索</label>
                 </div>
             </div>
         </div>
@@ -101,7 +99,7 @@
         <div class="filters">
             <div class="filter-item">
                 <span class="filter-label">Topic</span>
-                <select id="topicSelect"><option value="">読込中...</option></select>
+                <select id="topicSelect"><option value="">Loading...</option></select>
             </div>
             <div class="filter-item">
                 <span class="filter-label">Level</span>
@@ -115,18 +113,26 @@
                     <button class="btn-clear" onclick="allClear()">Clear</button>
                 </div>
             </div>
+            <div class="filter-item">
+                <span class="filter-label">Speed</span>
+                <div class="speed-chips">
+                    <label><input type="radio" name="speed" value="1.0" checked><span>Normal</span></label>
+                    <label><input type="radio" name="speed" value="0.8"><span>Slow</span></label>
+                    <label><input type="radio" name="speed" value="0.6"><span>Slower</span></label>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
-<div id="status">データを読み込んでいます...</div>
+<div id="status">Loading data...</div>
 <div id="resultList"></div>
 
 <div id="modal" class="modal" onclick="this.style.display='none'">
     <div class="modal-content" onclick="event.stopPropagation()">
         <div id="modalText" style="font-weight:bold; font-size:1.2rem; margin-bottom:10px;"></div>
         <div id="modalJp" style="color:#475569; margin-bottom:15px;"></div>
-        <button class="btn-close" onclick="document.getElementById('modal').style.display='none'">とじる</button>
+        <button class="btn-close" onclick="document.getElementById('modal').style.display='none'">Close</button>
     </div>
 </div>
 
@@ -165,7 +171,7 @@ async function loadData() {
         const topicText = await topicRes.text();
         const rawTopic = parseCSV(topicText);
         const topicSelect = document.getElementById('topicSelect');
-        topicSelect.innerHTML = '<option value="">すべてのトピック表示</option>';
+        topicSelect.innerHTML = '<option value="">All Topics / すべてのトピック</option>';
         rawTopic.slice(1).forEach(t => {
             if(t[0]){
                 const opt = document.createElement('option');
@@ -177,10 +183,10 @@ async function loadData() {
         corpusData = rawData.slice(1).map(r => ({
             no: r[0] || "", en: r[1] || "", jp: r[2] || "", topic: r[3] || "", level: r[4] || ""
         }));
-        document.getElementById('status').innerText = "読み込み完了";
+        document.getElementById('status').innerText = "Data Loaded / 読み込み完了";
         update();
     } catch (e) {
-        document.getElementById('status').innerText = "エラー: 読み込み失敗";
+        document.getElementById('status').innerText = "Load Error / 読み込み失敗";
     }
 }
 
@@ -194,6 +200,7 @@ function allClear() {
     document.querySelectorAll('input[name="logic2"][value="or"]').forEach(el => el.checked = true);
     document.querySelectorAll('input[name="logic3"][value="or"]').forEach(el => el.checked = true);
     document.querySelectorAll('.filter-level').forEach(cb => cb.checked = true);
+    document.querySelector('input[name="speed"][value="1.0"]').checked = true;
     document.getElementById('topicSelect').value = '';
     update();
 }
@@ -212,9 +219,7 @@ function update() {
     const makeRegex = (item) => {
         if (!item.val) return null;
         let pattern = item.val;
-        // 単語検索にチェックがある場合、単語境界を追加
         if (item.word) {
-            // 正規表現特殊文字をエスケープしてから境界で囲む
             const escaped = pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             pattern = `\\b${escaped}\\b`;
         }
@@ -228,7 +233,6 @@ function update() {
         const text = d.en + " " + d.jp;
         let isMatch = true;
         const check = (reg) => reg ? reg.test(text) : true;
-
         if (qRaw[0].val) isMatch = check(regs[0]);
         if (qRaw[1].val) {
             const m = check(regs[1]);
@@ -243,12 +247,11 @@ function update() {
         return isMatch && matchLevel && matchTopic;
     });
 
-    // ハイライト用
     const words = qRaw.filter(i => i.val !== "").map(i => i.word ? `\\b${i.val.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b` : i.val.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
     let highlightRegex = words.length > 0 ? new RegExp(`(${words.join('|')})`, 'gi') : null;
 
     render(filtered, highlightRegex);
-    document.getElementById('status').innerText = `${filtered.length} 件表示中`;
+    document.getElementById('status').innerText = `${filtered.length} Results Found / 件表示中`;
 }
 
 function render(data, regex) {
@@ -283,11 +286,16 @@ function speak(text, lang) {
     window.speechSynthesis.cancel();
     const uttr = new SpeechSynthesisUtterance(text);
     const voices = window.speechSynthesis.getVoices();
+    
+    // 選択されたスピードを取得
+    const selectedSpeed = document.querySelector('input[name="speed"]:checked').value;
+    uttr.rate = parseFloat(selectedSpeed);
+
     if (lang === 'en') {
-        uttr.lang = 'en-US'; uttr.rate = 0.8;
+        uttr.lang = 'en-US';
         uttr.voice = voices.find(v => v.lang.startsWith('en') && v.name.includes('Google')) || voices.find(v => v.lang.startsWith('en'));
     } else {
-        uttr.lang = 'ja-JP'; uttr.rate = 0.9;
+        uttr.lang = 'ja-JP';
         uttr.voice = voices.find(v => v.lang.startsWith('ja') && (v.name.includes('Kyoko') || v.name.includes('Google'))) || voices.find(v => v.lang.startsWith('ja'));
     }
     window.speechSynthesis.speak(uttr);

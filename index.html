@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EasyConc for Web v1.0</title>
+    <title>English Corpus App v8</title>
     <style>
         :root { --primary: #0284c7; --bg: #f1f5f9; --card-bg: #ffffff; --danger: #ef4444; --accent: #10b981; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -223,8 +223,8 @@ function update() {
             const escaped = pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             pattern = `\\b${escaped}\\b`;
         }
-        try { return new RegExp(pattern, 'i'); } 
-        catch(e) { return new RegExp(item.val.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'); }
+        try { return new RegExp(pattern, 'gi'); } 
+        catch(e) { return null; }
     };
 
     const regs = qRaw.map(makeRegex);
@@ -247,8 +247,24 @@ function update() {
         return isMatch && matchLevel && matchTopic;
     });
 
-    const words = qRaw.filter(i => i.val !== "").map(i => i.word ? `\\b${i.val.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b` : i.val.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-    let highlightRegex = words.length > 0 ? new RegExp(`(${words.join('|')})`, 'gi') : null;
+    // ハイライト用の正規表現作成（入力が正規表現そのものでも機能するように改善）
+    let highlightPatterns = [];
+    qRaw.forEach((item, idx) => {
+        if (!item.val) return;
+        if (item.word) {
+            highlightPatterns.push(`\\b${item.val.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`);
+        } else {
+            // 入力文字列そのものをハイライト候補に加える
+            highlightPatterns.push(item.val);
+        }
+    });
+    
+    let highlightRegex = null;
+    if (highlightPatterns.length > 0) {
+        try {
+            highlightRegex = new RegExp(`(${highlightPatterns.join('|')})`, 'gi');
+        } catch(e) { highlightRegex = null; }
+    }
 
     render(filtered, highlightRegex);
     document.getElementById('status').innerText = `${filtered.length} Results Found / 件表示中`;
@@ -287,19 +303,29 @@ function speak(text, lang) {
     const uttr = new SpeechSynthesisUtterance(text);
     const voices = window.speechSynthesis.getVoices();
     
-    // 選択されたスピードを取得
     const selectedSpeed = document.querySelector('input[name="speed"]:checked').value;
     uttr.rate = parseFloat(selectedSpeed);
 
     if (lang === 'en') {
         uttr.lang = 'en-US';
-        uttr.voice = voices.find(v => v.lang.startsWith('en') && v.name.includes('Google')) || voices.find(v => v.lang.startsWith('en'));
+        // 【女性の声（英語）を優先的に探すロジック】
+        // 1. Googleの女性 2. 名前に女性名を含むもの 3. 日本語設定以外の英語
+        let voice = voices.find(v => v.lang.startsWith('en') && v.name.includes('Google') && v.name.includes('Female')) 
+                 || voices.find(v => v.lang.startsWith('en') && (v.name.includes('Samantha') || v.name.includes('Victoria') || v.name.includes('Karen') || v.name.includes('Moira')))
+                 || voices.find(v => v.lang.startsWith('en'));
+        if (voice) uttr.voice = voice;
     } else {
         uttr.lang = 'ja-JP';
-        uttr.voice = voices.find(v => v.lang.startsWith('ja') && (v.name.includes('Kyoko') || v.name.includes('Google'))) || voices.find(v => v.lang.startsWith('ja'));
+        // 【女性の声（日本語）を優先的に探すロジック】
+        let voice = voices.find(v => v.lang.startsWith('ja') && (v.name.includes('Kyoko') || v.name.includes('O-to-ya') === false))
+                 || voices.find(v => v.lang.startsWith('ja'));
+        if (voice) uttr.voice = voice;
     }
     window.speechSynthesis.speak(uttr);
 }
+
+// ページ読み込み時に声をロード（iOS対策）
+window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
 
 function showModal(en, jp) {
     document.getElementById('modalText').innerText = en;
@@ -315,4 +341,3 @@ window.onload = () => {
 </script>
 </body>
 </html>
-

@@ -264,7 +264,7 @@ function render(data, regex) {
     const list = document.getElementById('resultList');
     list.innerHTML = '';
     if (data.length === 0) {
-        list.innerHTML = '<div class="no-data">該当するデータがありませんでした。</div>';
+        list.innerHTML = '<div class="no-data">No matching data found. /該当するデータがありませんでした。</div>';
         return;
     }
     data.forEach(item => {
@@ -324,4 +324,5 @@ window.onload = loadData;
 </script>
 </body>
 </html>
+
 

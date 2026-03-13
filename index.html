@@ -155,9 +155,13 @@ function parseCSV(text) {
 
 async function loadData() {
     try {
-        const [dataRes, topicRes] = await Promise.all([fetch(DATA_URL), fetch(TOPIC_URL)]);
-        const dataText = await dataRes.text();
+        document.getElementById('status').innerText = "Connecting to Google...";
+
+        // 1. Topicを先に取得
+        const topicRes = await fetch(TOPIC_URL);
+        if (!topicRes.ok) throw new Error("Topic load failed");
         const topicText = await topicRes.text();
+        
         const rawTopic = parseCSV(topicText);
         const topicSelect = document.getElementById('topicSelect');
         topicSelect.innerHTML = '<option value="">All Topics / すべてのトピック</option>';
@@ -168,14 +172,22 @@ async function loadData() {
                 topicSelect.appendChild(opt);
             }
         });
+
+        // 2. Dataを次に取得
+        const dataRes = await fetch(DATA_URL);
+        if (!dataRes.ok) throw new Error("Data load failed");
+        const dataText = await dataRes.text();
+        
         const rawData = parseCSV(dataText);
         corpusData = rawData.slice(1).map(r => ({
             no: r[0] || "", en: r[1] || "", jp: r[2] || "", topic: r[3] || "", level: r[4] || ""
         }));
+
         document.getElementById('status').innerText = "Data Loaded / 読み込み完了";
         update();
     } catch (e) {
-        document.getElementById('status').innerText = "Load Error / 読み込み失敗";
+        console.error(e);
+        document.getElementById('status').innerText = "Load Error / 読み込み失敗: " + e.message;
     }
 }
 
@@ -312,3 +324,4 @@ window.onload = loadData;
 </script>
 </body>
 </html>
+

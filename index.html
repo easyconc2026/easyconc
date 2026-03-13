@@ -53,6 +53,9 @@
         mark { background: #fef08a; color: #854d0e; padding: 0 2px; }
         #status { font-size: 11px; color: #94a3b8; text-align: center; margin-top: 5px; }
 
+        /* 追加：データなし時のメッセージスタイル */
+        .no-data { text-align: center; padding: 40px 20px; color: #64748b; font-weight: bold; background: white; border-radius: 12px; margin-top: 20px; }
+
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; padding: 20px; align-items: center; justify-content: center; }
         .modal-content { background: white; padding: 20px; border-radius: 15px; width: 100%; max-width: 500px; }
         .btn-close { width: 100%; padding: 12px; background: #f1f5f9; border: none; border-radius: 10px; font-weight: bold; margin-top: 10px; }
@@ -166,7 +169,7 @@ function parseCSV(text) {
 
 async function loadData() {
     try {
-        const [dataRes, topicRes] = await Promise.all([fetch(DATA_URL), fetch(TOPIC_URL)]);
+        const [dataRes, topicRes] = await Promise.all([fetch(DATA_URL), fetch(topicRes)]);
         const dataText = await dataRes.text();
         const topicText = await topicRes.text();
         const rawTopic = parseCSV(topicText);
@@ -247,24 +250,13 @@ function update() {
         return isMatch && matchLevel && matchTopic;
     });
 
-    // ハイライト用の正規表現作成（入力が正規表現そのものでも機能するように改善）
     let highlightPatterns = [];
-    qRaw.forEach((item, idx) => {
+    qRaw.forEach((item) => {
         if (!item.val) return;
-        if (item.word) {
-            highlightPatterns.push(`\\b${item.val.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`);
-        } else {
-            // 入力文字列そのものをハイライト候補に加える
-            highlightPatterns.push(item.val);
-        }
+        highlightPatterns.push(item.word ? `\\b${item.val.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b` : item.val);
     });
     
-    let highlightRegex = null;
-    if (highlightPatterns.length > 0) {
-        try {
-            highlightRegex = new RegExp(`(${highlightPatterns.join('|')})`, 'gi');
-        } catch(e) { highlightRegex = null; }
-    }
+    let highlightRegex = highlightPatterns.length > 0 ? new RegExp(`(${highlightPatterns.join('|')})`, 'gi') : null;
 
     render(filtered, highlightRegex);
     document.getElementById('status').innerText = `${filtered.length} Results Found / 件表示中`;
@@ -273,6 +265,13 @@ function update() {
 function render(data, regex) {
     const list = document.getElementById('resultList');
     list.innerHTML = '';
+
+    // 【修正箇所】：データが空の場合
+    if (data.length === 0) {
+        list.innerHTML = '<div class="no-data">該当するデータがありませんでした。</div>';
+        return;
+    }
+
     data.forEach(item => {
         const div = document.createElement('div');
         div.className = 'card';
@@ -302,29 +301,21 @@ function speak(text, lang) {
     window.speechSynthesis.cancel();
     const uttr = new SpeechSynthesisUtterance(text);
     const voices = window.speechSynthesis.getVoices();
-    
-    const selectedSpeed = document.querySelector('input[name="speed"]:checked').value;
-    uttr.rate = parseFloat(selectedSpeed);
-
+    uttr.rate = parseFloat(document.querySelector('input[name="speed"]:checked').value);
     if (lang === 'en') {
         uttr.lang = 'en-US';
-        // 【女性の声（英語）を優先的に探すロジック】
-        // 1. Googleの女性 2. 名前に女性名を含むもの 3. 日本語設定以外の英語
         let voice = voices.find(v => v.lang.startsWith('en') && v.name.includes('Google') && v.name.includes('Female')) 
-                 || voices.find(v => v.lang.startsWith('en') && (v.name.includes('Samantha') || v.name.includes('Victoria') || v.name.includes('Karen') || v.name.includes('Moira')))
+                 || voices.find(v => v.lang.startsWith('en') && (v.name.includes('Samantha') || v.name.includes('Victoria')))
                  || voices.find(v => v.lang.startsWith('en'));
         if (voice) uttr.voice = voice;
     } else {
         uttr.lang = 'ja-JP';
-        // 【女性の声（日本語）を優先的に探すロジック】
-        let voice = voices.find(v => v.lang.startsWith('ja') && (v.name.includes('Kyoko') || v.name.includes('O-to-ya') === false))
-                 || voices.find(v => v.lang.startsWith('ja'));
+        let voice = voices.find(v => v.lang.startsWith('ja') && (v.name.includes('Kyoko'))) || voices.find(v => v.lang.startsWith('ja'));
         if (voice) uttr.voice = voice;
     }
     window.speechSynthesis.speak(uttr);
 }
 
-// ページ読み込み時に声をロード（iOS対策）
 window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
 
 function showModal(en, jp) {
@@ -334,11 +325,7 @@ function showModal(en, jp) {
 }
 
 document.querySelectorAll('input, select').forEach(el => el.addEventListener('input', update));
-window.onload = () => {
-    loadData();
-    if(window.innerWidth < 600) document.getElementById('searchPanel').classList.add('collapsed');
-};
+window.onload = loadData;
 </script>
 </body>
 </html>
-

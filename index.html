@@ -233,7 +233,12 @@ function update() {
     const filtered = corpusData.filter(d => {
         const text = d.en + " " + d.jp;
         let isMatch = true;
-        const check = (reg) => reg ? reg.test(text) : true;
+        // const check = (reg) => reg ? reg.test(text) : true;
+        const check = (reg) => {
+            if (!reg) return true;
+            reg.lastIndex = 0; // ここで検索位置をリセットします
+            return reg.test(text);
+        };
         if (qRaw[0].val) isMatch = check(regs[0]);
         if (qRaw[1].val) {
             const m = check(regs[1]);
